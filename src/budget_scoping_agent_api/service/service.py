@@ -7,27 +7,27 @@ from budget_scoping_agent.main import run_budget_search_workflow
 async def run_budget_search_service(agent, message: str, thread_id: str = None):
     thread_id = thread_id or str(uuid.uuid4())
     
-    # Se thread_id foi fornecido, tenta recuperar conversa anterior do Redis
+
     previous_messages = []
     if thread_id:
         previous_data = await get_thread_interactions(thread_id)
         if previous_data and "messages" in previous_data:
-            # Reconstrói as mensagens anteriores
+
             for msg in previous_data["messages"]:
                 if msg["type"] == "HumanMessage":
                     previous_messages.append(HumanMessage(content=msg["content"]))
                 elif msg["type"] == "AIMessage":
                     previous_messages.append(AIMessage(content=msg["content"]))
     
-    # Adiciona a nova mensagem do usuário
+
     all_messages = previous_messages + [HumanMessage(content=message)]
     
-    # Executa o workflow com todas as mensagens (anteriores + nova)
+
     result = run_budget_search_workflow(agent, message, thread_id)
     
-    # Se havia mensagens anteriores, adiciona elas ao resultado para salvar o histórico completo
+    
     if previous_messages:
-        # Combina mensagens anteriores com as novas do resultado
+
         all_result_messages = previous_messages + result.get("messages", [])
         result["messages"] = all_result_messages
     
