@@ -1,8 +1,17 @@
-import redis
+"""
+Redis configuration for LangGraph checkpointer.
+Centralizes Redis connection for both checkpointer and custom operations.
+"""
+
 import os
+from redis import Redis
 
-REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
-REDIS_DB = int(os.environ.get("REDIS_DB", 0))
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+def get_redis_connection():
+    """
+    Get Redis connection for LangGraph checkpointer.
+    """
+    return Redis.from_url(REDIS_URL, decode_responses=False)
+
+redis_client = Redis.from_url(REDIS_URL, decode_responses=True)

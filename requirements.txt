@@ -10,3 +10,4 @@ python-dotenv>=1.1.1
 uvicorn>=0.35.0
 redis
 gunicorn==21.2.0
+langgraph-checkpoint-redis redis

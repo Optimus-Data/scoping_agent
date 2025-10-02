@@ -1,35 +1,24 @@
+"""
+Service layer for budget search agent.
+Estado da conversa gerenciado automaticamente pelo LangGraph RedisSaver.
+Redis customizado usado apenas para auditoria/histórico externo.
+"""
+
 import uuid
 from datetime import datetime
-from langchain_core.messages import HumanMessage, AIMessage
-from src.redis_db.db_operations import save_thread_interaction, get_thread_interactions
 from budget_scoping_agent.main import run_budget_search_workflow
+from src.redis_db.db_operations import save_thread_interaction, get_thread_interactions
 
 async def run_budget_search_service(agent, message: str, thread_id: str = None):
+    """
+    Run budget search workflow.
+    
+    O histórico da conversa é gerenciado automaticamente pelo RedisSaver do LangGraph.
+    Não é necessário carregar mensagens anteriores manualmente.
+    """
     thread_id = thread_id or str(uuid.uuid4())
     
-
-    previous_messages = []
-    if thread_id:
-        previous_data = await get_thread_interactions(thread_id)
-        if previous_data and "messages" in previous_data:
-
-            for msg in previous_data["messages"]:
-                if msg["type"] == "HumanMessage":
-                    previous_messages.append(HumanMessage(content=msg["content"]))
-                elif msg["type"] == "AIMessage":
-                    previous_messages.append(AIMessage(content=msg["content"]))
-    
-
-    all_messages = previous_messages + [HumanMessage(content=message)]
-    
-
     result = run_budget_search_workflow(agent, message, thread_id)
-    
-    
-    if previous_messages:
-
-        all_result_messages = previous_messages + result.get("messages", [])
-        result["messages"] = all_result_messages
     
     messages = []
     for msg in result.get("messages", []):
@@ -48,14 +37,21 @@ async def run_budget_search_service(agent, message: str, thread_id: str = None):
     }
 
     await save_thread_interaction(thread_id, response)
+    
     return response
 
 async def get_thread_service(thread_id: str):
+    """
+    Retrieve thread history from custom Redis storage (audit trail).
+    """
     data = await get_thread_interactions(thread_id)
     if not data:
         return {"thread_id": thread_id, "status": "not found"}
     return data
 
 async def generate_thread_id_service():
+    """
+    Generate a new unique thread ID.
+    """
     thread_id = str(uuid.uuid4())
     return {"thread_id": thread_id}
